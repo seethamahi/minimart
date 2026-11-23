@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMart | Online Shopping</title>
+    <style>
+:root {
+    --main: #2b2d6e;
+    --accent: #ff7a1a;
+    --bg: #f3f4fb;
+    --text: #1d1e33;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Trebuchet MS", Arial, sans-serif;
+}
+
+/* ---------- Header and tabs ---------- */
+header {
+    background: var(--main);
+    color: white;
+    padding: 14px 6% 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+header h1 { margin: 0 0 10px; font-size: 1.6rem; }
+
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.tabBtn {
+    background: transparent;
+    color: #c9cbf5;
+    border: none;
+    padding: 10px 18px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+}
+
+.tabBtn:hover { color: white; }
+.tabBtn.active { background: var(--bg); color: var(--main); font-weight: bold; }
+
+#cartCount {
+    background: var(--accent);
+    color: white;
+    border-radius: 12px;
+    padding: 1px 8px;
+    font-size: 0.85rem;
+}
+
+/* ---------- Tabs: only the one with class "show" is visible ---------- */
+main { max-width: 900px; margin: 0 auto; padding: 24px 5%; }
+.tab { display: none; }
+.tab.show { display: block; }
+
+/* ---------- Shop ---------- */
+.tools { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.tools input { flex: 1; min-width: 180px; }
+
+input, select {
+    padding: 10px;
+    border: 2px solid #c5c7e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+input:focus, select:focus, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 16px;
+}
+
+.product {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(43, 45, 110, 0.12);
+}
+
+.product { position: relative; }
+.badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #fff1e6;
+    color: #c2410c;
+    border-radius: 12px;
+    padding: 2px 9px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+.product .desc { font-size: 0.88rem; color: #55577f; margin: 6px 0 0; }
+.product .emoji { font-size: 3.2rem; padding-top: 10px; }
+.product h3 { margin: 6px 0 2px; font-size: 1.05rem; }
+.product .tag { color: #6b6d99; font-size: 0.85rem; }
+.product .price { font-weight: bold; color: var(--main); margin: 8px 0; }
+
+button.primary, .product button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button.primary:hover, .product button:hover { background: #e5640a; }
+
+/* ---------- Cart ---------- */
+.cartRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.qty button {
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--main);
+    background: white;
+    color: var(--main);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.qty span { display: inline-block; min-width: 28px; text-align: center; }
+.total { font-size: 1.3rem; font-weight: bold; text-align: right; }
+
+#checkoutBox { background: white; padding: 18px; border-radius: 10px; display: grid; gap: 10px; }
+#checkoutBox h3 { margin: 0; }
+#checkoutMsg { margin: 0; font-weight: bold; }
+.error { color: #c1121f; }
+.ok { color: #1b7f3b; }
+
+.empty { color: #6b6d99; padding: 20px 0; }
+
+/* ---------- Orders and help ---------- */
+.order { background: white; padding: 14px 16px; border-radius: 10px; margin-bottom: 10px; border-left: 6px solid var(--accent); }
+.order p { margin: 4px 0; }
+
+details { background: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: bold; }
+
+/* ---------- Small message popup ---------- */
+#toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--main);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+#toast.visible { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>MiniMart</h1>
+        <!-- TABS: each button opens one section -->
+        <nav>
+            <button class="tabBtn active" data-tab="shop">Shop</button>
+            <button class="tabBtn" data-tab="cart">Cart <span id="cartCount">0</span></button>
+            <button class="tabBtn" data-tab="orders">My Orders</button>
+            <button class="tabBtn" data-tab="help">Help</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- TAB 1: SHOP -->
+        <section id="shop" class="tab show">
+            <div class="tools">
+                <input type="text" id="search" placeholder="Search products...">
+                <select id="category">
+                    <option value="all">All categories</option>
+                    <option value="Gadgets">Gadgets</option>
+                    <option value="Fashion">Fashion</option>
+                    <option value="Home">Home</option>
+                    <option value="Jewellery">Jewellery</option>
+                    <option value="Makeup">Makeup</option>
+                    <option value="trending">🔥 Trending now</option>
+                </select>
+            </div>
+            <div id="productList" class="grid"></div>
+        </section>
+
+        <!-- TAB 2: CART + CHECKOUT -->
+        <section id="cart" class="tab">
+            <h2>Your cart</h2>
+            <div id="cartItems"></div>
+            <p class="total">Total: <span id="cartTotal">₹0</span></p>
+
+            <div id="checkoutBox">
+                <h3>Delivery details</h3>
+                <input type="text" id="custName" placeholder="Full name">
+                <input type="text" id="custAddress" placeholder="Address">
+                <button class="primary" id="placeOrderBtn">Place order</button>
+                <p id="checkoutMsg"></p>
+            </div>
+        </section>
+
+        <!-- TAB 3: ORDERS -->
+        <section id="orders" class="tab">
+            <h2>My orders</h2>
+            <div id="orderList"></div>
+        </section>
+
+        <!-- TAB 4: HELP -->
+        <section id="help" class="tab">
+            <h2>Help</h2>
+            <details open><summary>How do I buy something?</summary>
+                <p>Go to Shop, click "Add to cart", then open the Cart tab and place your order.</p></details>
+            <details><summary>Can I change the quantity?</summary>
+                <p>Yes. Use the + and − buttons in the Cart tab.</p></details>
+            <details><summary>Is this a real store?</summary>
+                <p>No. This is a college project, so no real payment happens.</p></details>
+        </section>
+    </main>
+
+    <div id="toast"></div>
+    <script>
+// ---------- 1. DATA ----------
+// Our products. To add a new product, just add one more line here.
+const products = [
+    // ----- Gadgets -----
+    { id: 1,  name: "Earbuds",         price: 1499, category: "Gadgets",   emoji: "🎧", desc: "Wireless, 20 hour battery" },
+    { id: 2,  name: "Smart watch",     price: 2999, category: "Gadgets",   emoji: "⌚", desc: "Steps, heart rate and calls" },
+    { id: 3,  name: "Power bank",      price: 999,  category: "Gadgets",   emoji: "🔋", desc: "10000 mAh, fast charging" },
+    { id: 4,  name: "Phone stand",     price: 299,  category: "Gadgets",   emoji: "📱", desc: "Foldable, fits all phones" },
+    // ----- Fashion -----
+    { id: 5,  name: "T-shirt",         price: 499,  category: "Fashion",   emoji: "👕", desc: "Soft cotton, regular fit" },
+    { id: 6,  name: "Sneakers",        price: 1799, category: "Fashion",   emoji: "👟", desc: "Light and comfortable" },
+    { id: 7,  name: "Backpack",        price: 899,  category: "Fashion",   emoji: "🎒", desc: "Laptop pocket, 25 litres" },
+    { id: 8,  name: "Sunglasses",      price: 599,  category: "Fashion",   emoji: "🕶️", desc: "UV protected lenses" },
+    // ----- Home -----
+    { id: 9,  name: "Table lamp",      price: 699,  category: "Home",      emoji: "💡", desc: "Warm light, touch control" },
+    { id: 10, name: "Water bottle",    price: 349,  category: "Home",      emoji: "🧴", desc: "Steel, keeps cold 12 hours" },
+    { id: 11, name: "Coffee mug",      price: 249,  category: "Home",      emoji: "☕", desc: "Ceramic, 300 ml" },
+    { id: 12, name: "Desk plant",      price: 399,  category: "Home",      emoji: "🪴", desc: "Low maintenance, with pot" },
+    // ----- Jewellery -----
+    { id: 13, name: "Jhumka earrings",    price: 599,  category: "Jewellery", emoji: "🔔", desc: "Oxidised silver finish, festive wear", trending: true },
+    { id: 14, name: "Pearl necklace",     price: 1299, category: "Jewellery", emoji: "📿", desc: "Classic pearl strand, goes with sarees and western wear", trending: true },
+    { id: 15, name: "Layered gold chain", price: 899,  category: "Jewellery", emoji: "⛓️", desc: "Dainty 3-layer chain for daily wear", trending: true },
+    { id: 16, name: "Chunky gold hoops",  price: 699,  category: "Jewellery", emoji: "⭕", desc: "Bold hoops, gold plated, lightweight", trending: true },
+    { id: 17, name: "Statement ring",     price: 549,  category: "Jewellery", emoji: "💍", desc: "Adjustable ring with coloured stone", trending: true },
+    { id: 18, name: "Kundan choker set",  price: 1899, category: "Jewellery", emoji: "👑", desc: "Choker with matching earrings, for weddings" },
+    { id: 19, name: "Temple haram",       price: 2499, category: "Jewellery", emoji: "🏵️", desc: "Antique gold look, traditional South Indian style" },
+    { id: 20, name: "Glass bangles",      price: 349,  category: "Jewellery", emoji: "🟡", desc: "Set of 12, mixed festive colours" },
+    // ----- Makeup -----
+    { id: 21, name: "Matte lipstick",     price: 399,  category: "Makeup",    emoji: "💄", desc: "Long lasting, 6 shades", trending: true },
+    { id: 22, name: "Lip and cheek tint", price: 299,  category: "Makeup",    emoji: "🌸", desc: "Natural flushed look, one product for both", trending: true },
+    { id: 23, name: "Pastel nail polish", price: 449,  category: "Makeup",    emoji: "💅", desc: "Set of 4 soft pastel colours", trending: true },
+    { id: 24, name: "Highlighter",        price: 549,  category: "Makeup",    emoji: "✨", desc: "Subtle glow for cheeks and nose", trending: true },
+    { id: 25, name: "Kajal",              price: 199,  category: "Makeup",    emoji: "🖋️", desc: "Smudge proof, deep black" },
+    { id: 26, name: "Eyeshadow palette",  price: 799,  category: "Makeup",    emoji: "🎨", desc: "12 shades, matte and shimmer" },
+    { id: 27, name: "Compact powder",     price: 349,  category: "Makeup",    emoji: "🪞", desc: "Oil control, with mirror" },
+    { id: 28, name: "Makeup brush set",   price: 699,  category: "Makeup",    emoji: "🖌️", desc: "Set of 8 soft brushes with pouch" }
+];
+
+// cart looks like { 1: 2, 5: 1 } which means 2 of product 1 and 1 of product 5
+let cart = {};
+let orders = [];
+
+// Load saved data (so the cart is still there after refresh)
+try {
+    cart = JSON.parse(localStorage.getItem("cart")) || {};
+    orders = JSON.parse(localStorage.getItem("orders")) || [];
+} catch (e) {
+    cart = {};
+    orders = [];
+}
+
+function saveData() {
+    try {
+        localStorage.setItem("cart", JSON.stringify(cart));
+        localStorage.setItem("orders", JSON.stringify(orders));
+    } catch (e) { /* saving not available, app still works */ }
+}
+
+function findProduct(id) {
+    return products.find(function (p) { return p.id === id; });
+}
+
+function showToast(text) {
+    const toast = document.getElementById("toast");
+    toast.textContent = text;
+    toast.classList.add("visible");
+    setTimeout(function () { toast.classList.remove("visible"); }, 1500);
+}
+
+// ---------- 2. TABS ----------
+const tabButtons = document.querySelectorAll(".tabBtn");
+const tabs = document.querySelectorAll(".tab");
+
+function showTab(name) {
+    tabButtons.forEach(function (b) { b.classList.toggle("active", b.dataset.tab === name); });
+    tabs.forEach(function (t) { t.classList.toggle("show", t.id === name); });
+}
+
+tabButtons.forEach(function (button) {
+    button.addEventListener("click", function () { showTab(button.dataset.tab); });
+});
+
+// ---------- 3. SHOP TAB ----------
+function renderProducts() {
+    const text = document.getElementById("search").value.toLowerCase();
+    const category = document.getElementById("category").value;
+    let html = "";
+
+    products.forEach(function (p) {
+        const matchesText = p.name.toLowerCase().includes(text);
+        const matchesCategory = category === "all" ||
+                                (category === "trending" && p.trending) ||
+                                p.category === category;
+
+        if (matchesText && matchesCategory) {
+            const badge = p.trending ? '<span class="badge">🔥 Trending</span>' : '';
+            html += '<div class="product">' + badge +
+                '<div class="emoji">' + p.emoji + '</div>' +
+                '<h3>' + p.name + '</h3>' +
+                '<div class="tag">' + p.category + '</div>' +
+                '<p class="desc">' + p.desc + '</p>' +
+                '<div class="price">₹' + p.price + '</div>' +
+                '<button onclick="addToCart(' + p.id + ')">Add to cart</button>' +
+                '</div>';
+        }
+    });
+
+    if (html === "") {
+        html = '<p class="empty">No products found. Try another search.</p>';
+    }
+    document.getElementById("productList").innerHTML = html;
+}
+
+document.getElementById("search").addEventListener("input", renderProducts);
+document.getElementById("category").addEventListener("change", renderProducts);
+
+function addToCart(id) {
+    cart[id] = (cart[id] || 0) + 1;
+    saveData();
+    renderCart();
+    showToast(findProduct(id).name + " added to cart");
+}
+
+// ---------- 4. CART TAB ----------
+function changeQty(id, change) {
+    cart[id] = cart[id] + change;
+    if (cart[id] <= 0) {
+        delete cart[id]; // remove item when quantity reaches 0
+    }
+    saveData();
+    renderCart();
+}
+
+function renderCart() {
+    let html = "";
+    let total = 0;
+    let count = 0;
+
+    for (const id in cart) {
+        const p = findProduct(Number(id));
+        const qty = cart[id];
+        total += p.price * qty;
+        count += qty;
+
+        html += '<div class="cartRow">' +
+            '<strong>' + p.emoji + ' ' + p.name + '</strong>' +
+            '<span class="qty">' +
+                '<button onclick="changeQty(' + p.id + ', -1)" aria-label="Decrease">−</button>' +
+                '<span>' + qty + '</span>' +
+                '<button onclick="changeQty(' + p.id + ', 1)" aria-label="Increase">+</button>' +
+            '</span>' +
+            '<span>₹' + (p.price * qty) + '</span>' +
+            '</div>';
+    }
+
+    if (html === "") {
+        html = '<p class="empty">Your cart is empty. Go to the Shop tab and add something.</p>';
+    }
+
+    document.getElementById("cartItems").innerHTML = html;
+    document.getElementById("cartTotal").textContent = "₹" + total;
+    document.getElementById("cartCount").textContent = count;
+}
+
+// ---------- 5. PLACE ORDER ----------
+document.getElementById("placeOrderBtn").addEventListener("click", function () {
+    const name = document.getElementById("custName").value.trim();
+    const address = document.getElementById("custAddress").value.trim();
+    const msg = document.getElementById("checkoutMsg");
+
+    if (Object.keys(cart).length === 0) {
+        msg.textContent = "Your cart is empty.";
+        msg.className = "error";
+        return;
+    }
+    if (name === "" || address === "") {
+        msg.textContent = "Please enter your name and address.";
+        msg.className = "error";
+        return;
+    }
+
+    // Build the order from the cart
+    let items = [];
+    let total = 0;
+    for (const id in cart) {
+        const p = findProduct(Number(id));
+        items.push(p.name + " x" + cart[id]);
+        total += p.price * cart[id];
+    }
+
+    orders.unshift({
+        number: "ORD" + (1000 + orders.length + 1),
+        date: new Date().toLocaleDateString(),
+        name: name,
+        address: address,
+        items: items.join(", "),
+        total: total
+    });
+
+    cart = {};
+    saveData();
+    renderCart();
+    renderOrders();
+    document.getElementById("custName").value = "";
+    document.getElementById("custAddress").value = "";
+    msg.textContent = "";
+    showToast("Order placed!");
+    showTab("orders");
+});
+
+// ---------- 6. ORDERS TAB ----------
+function renderOrders() {
+    let html = "";
+
+    orders.forEach(function (o) {
+        html += '<div class="order">' +
+            '<p><strong>' + o.number + '</strong> · ' + o.date + '</p>' +
+            '<p>' + o.items + '</p>' +
+            '<p>Deliver to: ' + o.name + ', ' + o.address + '</p>' +
+            '<p><strong>Total: ₹' + o.total + '</strong></p>' +
+            '</div>';
+    });
+
+    if (html === "") {
+        html = '<p class="empty">No orders yet.</p>';
+    }
+    document.getElementById("orderList").innerHTML = html;
+}
+
+// ---------- 7. START THE APP ----------
+renderProducts();
+renderCart();
+renderOrders();
+
+    </script>
+</body>
+</html>
